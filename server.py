@@ -4,6 +4,7 @@ import json
 import os
 import re
 import secrets
+import threading
 from datetime import datetime, timedelta, timezone
 from email import policy
 from email.parser import BytesParser
@@ -23,6 +24,7 @@ SESSIONS_FILE = DATA_DIR / "admin_sessions.json"
 SESSION_COOKIE = "nis7a_session"
 SESSION_HOURS = 12
 PBKDF2_ITERATIONS = 130000
+STORE_LOCK = threading.RLock()
 
 UPLOAD_DIR.mkdir(exist_ok=True)
 DATA_DIR.mkdir(exist_ok=True)
@@ -96,14 +98,18 @@ MIME_TYPES = {
 
 
 def read_json(path: Path):
-    try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except Exception:
-        return []
+    with STORE_LOCK:
+        try:
+            return json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            return []
 
 
 def write_json(path: Path, data):
-    path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    with STORE_LOCK:
+        tmp_path = path.with_suffix(path.suffix + ".tmp")
+        tmp_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        tmp_path.replace(path)
 
 
 def parse_content_type(value: str):
@@ -341,9 +347,11 @@ class Handler(BaseHTTPRequestHandler):
     def _redirect(self, location: str):
         self.send_response(302)
         self.send_header("Location", location)
+        self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
+        self.send_header("Pragma", "no-cache")
         self.end_headers()
 
-    def _serve_file(self, relative_path: str):
+    def _serve_file(self, relative_path: str, no_cache=False):
         path = (BASE_DIR / relative_path.lstrip("/")).resolve()
         if not str(path).startswith(str(BASE_DIR)):
             self.send_error(403)
@@ -357,6 +365,9 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", mime)
         self.send_header("Content-Length", str(len(body)))
+        if no_cache:
+            self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
+            self.send_header("Pragma", "no-cache")
         self.end_headers()
         self.wfile.write(body)
 
@@ -440,7 +451,7 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/":
                 self._serve_file("index.html")
             else:
-                self._serve_file(path.lstrip("/"))
+                self._serve_file(path.lstrip("/"), no_cache=path.startswith("/admin/"))
             return
 
         self._serve_file(path.lstrip("/"))

@@ -94,7 +94,7 @@
     let currentUsername = null;
 
     const ensureAuth = async () => {
-      const res = await fetch('/api/me');
+      const res = await fetch('/api/me', { credentials: 'include' });
       if (!res.ok) {
         window.location.href = 'login.html';
         return null;
@@ -106,7 +106,7 @@
     };
 
     const refreshAdminList = async () => {
-      const res = await fetch('/api/admin-users');
+      const res = await fetch('/api/admin-users', { credentials: 'include' });
       if (!res.ok) {
         window.location.href = 'login.html';
         return 0;
@@ -135,6 +135,7 @@
 
           const delRes = await fetch('/api/admin-users/delete', {
             method: 'POST',
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username })
           });
@@ -154,8 +155,8 @@
 
     const refreshUsers = async () => {
       const [statsRes, adminsRes] = await Promise.all([
-        fetch('/api/stats'),
-        fetch('/api/admin-users')
+        fetch('/api/stats', { credentials: 'include' }),
+        fetch('/api/admin-users', { credentials: 'include' })
       ]);
       const stats = await statsRes.json();
       const adminsData = await adminsRes.json();
@@ -182,6 +183,7 @@
       status.textContent = 'Création du compte en cours...';
       const res = await fetch('/api/admin-users', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
       });
@@ -205,6 +207,7 @@
       passwordStatus.textContent = 'Mise à jour du mot de passe...';
       const res = await fetch('/api/admin-password', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ currentPassword, newPassword })
       });
