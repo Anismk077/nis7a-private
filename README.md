@@ -64,6 +64,37 @@ docker compose up -d --build
 Puis ouvre:
 - http://127.0.0.1:8000/admin/login.html
 
+## Mode 24/7 (meme PC eteint)
+
+Pour que le site reste accessible quand ton PC est eteint, il faut le lancer sur un serveur allume en permanence (VPS/VM).
+
+### Installation serveur en 5 commandes
+
+```bash
+sudo mkdir -p /opt/nis7a
+sudo chown -R "$USER":"$USER" /opt/nis7a
+git clone https://github.com/Anismk077/nis7a-private.git /opt/nis7a
+cd /opt/nis7a
+docker compose up -d --build
+```
+
+### Demarrage automatique au reboot serveur
+
+```bash
+cd /opt/nis7a
+chmod +x deploy/setup-server.sh deploy/update.sh
+sudo cp deploy/systemd/nis7a.service /etc/systemd/system/nis7a.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now nis7a.service
+```
+
+### Mise a jour apres un push GitHub
+
+```bash
+cd /opt/nis7a
+./deploy/update.sh
+```
+
 ## Important securite
 
 Ton token GitHub a ete expose dans l'historique terminal. Revoque-le et cree un nouveau token immediatement.
