@@ -61,6 +61,16 @@
       </div>
 
       <div class='panel-card'>
+        <div class='panel-head'><h3>Mon compte admin</h3><span id='currentAdmin'>-</span></div>
+        <form id='adminPasswordForm' class='upload-form'>
+          <input id='currentPassword' type='password' placeholder='Mot de passe actuel' required minlength='6'>
+          <input id='newPassword' type='password' placeholder='Nouveau mot de passe (min 6)' required minlength='6'>
+          <button class='btn' type='submit'>Modifier mon mot de passe</button>
+        </form>
+        <div id='adminPasswordStatus' class='upload-status'>Vous pouvez modifier votre mot de passe ici.</div>
+      </div>
+
+      <div class='panel-card'>
         <div class='panel-head'><h3>Liste des admins</h3><span id='adminCountLabel'>0 compte</span></div>
         <div id='adminList' class='video-list'></div>
       </div>
@@ -79,17 +89,65 @@
   <script>
     const form = document.getElementById('adminCreateForm');
     const status = document.getElementById('adminCreateStatus');
+    const passwordForm = document.getElementById('adminPasswordForm');
+    const passwordStatus = document.getElementById('adminPasswordStatus');
+    let currentUsername = null;
+
+    const ensureAuth = async () => {
+      const res = await fetch('/api/me');
+      if (!res.ok) {
+        window.location.href = 'login.html';
+        return null;
+      }
+      const data = await res.json();
+      currentUsername = data.username;
+      document.getElementById('currentAdmin').textContent = currentUsername || '-';
+      return data;
+    };
 
     const refreshAdminList = async () => {
       const res = await fetch('/api/admin-users');
+      if (!res.ok) {
+        window.location.href = 'login.html';
+        return 0;
+      }
       const data = await res.json();
       const admins = Array.isArray(data.users) ? data.users : [];
 
       document.getElementById('adminCountLabel').textContent = `${admins.length} compte${admins.length > 1 ? 's' : ''}`;
       const list = document.getElementById('adminList');
       list.innerHTML = admins.length
-        ? admins.map(a => `<div class='video-item'><strong>${a.username}</strong><br><span>Créé le: ${a.createdAt || '-'}</span></div>`).join('')
+        ? admins.map(a => {
+            const canDelete = a.username !== 'anis' && a.username !== currentUsername;
+            const deleteButton = canDelete
+              ? `<button class='btn delete-admin' data-user='${a.username}' style='display:inline-block;width:auto;padding:8px 12px;margin-top:8px'>Supprimer</button>`
+              : '';
+            return `<div class='video-item'><strong>${a.username}</strong><br><span>Créé le: ${a.createdAt || '-'}</span><br>${deleteButton}</div>`;
+          }).join('')
         : '<p>Aucun compte admin.</p>';
+
+      document.querySelectorAll('.delete-admin').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const username = btn.dataset.user;
+          if (!username) return;
+          const ok = confirm(`Supprimer le compte admin ${username} ?`);
+          if (!ok) return;
+
+          const delRes = await fetch('/api/admin-users/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username })
+          });
+          const delData = await delRes.json();
+          if (!delRes.ok || !delData.ok) {
+            status.textContent = delData.error ? `Erreur: ${delData.error}` : 'Suppression impossible.';
+            return;
+          }
+          status.textContent = `Compte supprimé: ${username}`;
+          await refreshAdminList();
+          await refreshUsers();
+        });
+      });
 
       return admins.length;
     };
@@ -139,8 +197,32 @@
       await refreshUsers();
     });
 
-    refreshAdminList();
-    refreshUsers();
+    passwordForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const currentPassword = document.getElementById('currentPassword').value.trim();
+      const newPassword = document.getElementById('newPassword').value.trim();
+
+      passwordStatus.textContent = 'Mise à jour du mot de passe...';
+      const res = await fetch('/api/admin-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword, newPassword })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        passwordStatus.textContent = data.error ? `Erreur: ${data.error}` : 'Erreur de mise à jour.';
+        return;
+      }
+
+      passwordForm.reset();
+      passwordStatus.textContent = 'Mot de passe mis à jour avec succès.';
+    });
+
+    ensureAuth().then(async (auth) => {
+      if (!auth) return;
+      await refreshAdminList();
+      await refreshUsers();
+    });
   </script>
 </body>
 </html>

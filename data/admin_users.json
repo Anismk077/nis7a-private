@@ -1,0 +1,9 @@
+[
+  {
+    "username": "anis",
+    "passwordSalt": "0e0b9bcf04c8ee4f72a7dd3337981b05",
+    "passwordHash": "40a6a3067e07eb681aa21935a5cc7e99a9fd1f3b41c9128997c5441e8495fa8d",
+    "iterations": 130000,
+    "createdAt": "2026-07-28T12:25:35.054113Z"
+  }
+]
