@@ -37,7 +37,7 @@
 
     <section class='content-grid'>
       <div class='panel-card'>
-        <div class='panel-head'><h3>Utilisateurs récents</h3><span id='usersActive'>0 actif</span></div>
+        <div class='panel-head'><h3>Comptes admin</h3><span id='usersActive'>0 actif</span></div>
         <div class='progress-list'>
           <div class='progress-item'>
             <div class='progress-label'><span>Admin</span><strong id='adminUsers'>0</strong></div>
@@ -51,24 +51,60 @@
       </div>
 
       <div class='panel-card'>
-        <div class='panel-head'><h3>Actions</h3><span>Rapide</span></div>
+        <div class='panel-head'><h3>Ajouter un compte admin</h3><span>Nouveau</span></div>
+        <form id='adminCreateForm' class='upload-form'>
+          <input id='newAdminUsername' type='text' placeholder='Nom utilisateur (ex: samir)' required minlength='3'>
+          <input id='newAdminPassword' type='password' placeholder='Mot de passe (min 4 caractères)' required minlength='4'>
+          <button class='btn' type='submit'>Créer le compte admin</button>
+        </form>
+        <div id='adminCreateStatus' class='upload-status'>Aucun ajout pour le moment.</div>
+      </div>
+
+      <div class='panel-card'>
+        <div class='panel-head'><h3>Liste des admins</h3><span id='adminCountLabel'>0 compte</span></div>
+        <div id='adminList' class='video-list'></div>
+      </div>
+
+      <div class='panel-card'>
+        <div class='panel-head'><h3>Actions</h3><span>Info</span></div>
         <div class='quick-actions'>
-          <article class='action-card'>👤 Ajouter un user</article>
-          <article class='action-card'>🔒 Bloquer</article>
-          <article class='action-card'>✉ Envoyer un mail</article>
-          <article class='action-card'>⚙ Gérer les droits</article>
+          <article class='action-card'>👤 Création via formulaire</article>
+          <article class='action-card'>🔐 Connexion via /api/admin-login</article>
+          <article class='action-card'>📊 Stats liées aux events</article>
+          <article class='action-card'>⚙ Gestion centralisée server</article>
         </div>
       </div>
     </section>
   </main>
   <script>
-    const refreshUsers = async () => {
-      const res = await fetch('/api/stats');
-      const stats = await res.json();
+    const form = document.getElementById('adminCreateForm');
+    const status = document.getElementById('adminCreateStatus');
 
-      const users = Number(stats.users || 0);
-      const admins = users > 0 ? 1 : 0;
-      const standard = Math.max(0, users - admins);
+    const refreshAdminList = async () => {
+      const res = await fetch('/api/admin-users');
+      const data = await res.json();
+      const admins = Array.isArray(data.users) ? data.users : [];
+
+      document.getElementById('adminCountLabel').textContent = `${admins.length} compte${admins.length > 1 ? 's' : ''}`;
+      const list = document.getElementById('adminList');
+      list.innerHTML = admins.length
+        ? admins.map(a => `<div class='video-item'><strong>${a.username}</strong><br><span>Créé le: ${a.createdAt || '-'}</span></div>`).join('')
+        : '<p>Aucun compte admin.</p>';
+
+      return admins.length;
+    };
+
+    const refreshUsers = async () => {
+      const [statsRes, adminsRes] = await Promise.all([
+        fetch('/api/stats'),
+        fetch('/api/admin-users')
+      ]);
+      const stats = await statsRes.json();
+      const adminsData = await adminsRes.json();
+
+      const admins = Array.isArray(adminsData.users) ? adminsData.users.length : 0;
+      const standard = Number(stats.users || 0);
+      const users = admins + standard;
 
       document.getElementById('usersActive').textContent = `${users} actif${users > 1 ? 's' : ''}`;
       document.getElementById('adminUsers').textContent = admins.toString();
@@ -80,6 +116,30 @@
       document.getElementById('standardBar').style.width = `${standardPct}%`;
     };
 
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const username = document.getElementById('newAdminUsername').value.trim();
+      const password = document.getElementById('newAdminPassword').value.trim();
+
+      status.textContent = 'Création du compte en cours...';
+      const res = await fetch('/api/admin-users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        status.textContent = data.error ? `Erreur: ${data.error}` : 'Erreur de création du compte.';
+        return;
+      }
+
+      form.reset();
+      status.textContent = `Compte admin ajouté: ${data.username}`;
+      await refreshAdminList();
+      await refreshUsers();
+    });
+
+    refreshAdminList();
     refreshUsers();
   </script>
 </body>

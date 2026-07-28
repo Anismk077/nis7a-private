@@ -1,5 +1,6 @@
 import json
 import os
+import hashlib
 from datetime import datetime
 from email import policy
 from email.parser import BytesParser
@@ -14,6 +15,7 @@ DATA_DIR = BASE_DIR / "data"
 STATS_FILE = DATA_DIR / "stats.json"
 VIDEOS_FILE = DATA_DIR / "videos.json"
 EVENTS_FILE = DATA_DIR / "events.json"
+ADMIN_USERS_FILE = DATA_DIR / "admin_users.json"
 
 UPLOAD_DIR.mkdir(exist_ok=True)
 DATA_DIR.mkdir(exist_ok=True)
@@ -26,6 +28,15 @@ if not VIDEOS_FILE.exists():
 
 if not EVENTS_FILE.exists():
     EVENTS_FILE.write_text(json.dumps({"visits": [], "downloads": [], "adminLoginAttempts": []}, indent=2), encoding="utf-8")
+
+if not ADMIN_USERS_FILE.exists():
+    ADMIN_USERS_FILE.write_text(json.dumps([
+        {
+            "username": "anis",
+            "passwordHash": hashlib.sha256("anis".encode("utf-8")).hexdigest(),
+            "createdAt": datetime.utcnow().isoformat() + "Z",
+        }
+    ], indent=2), encoding="utf-8")
 
 MIME_TYPES = {
     ".html": "text/html; charset=utf-8",
@@ -63,6 +74,67 @@ def parse_content_type(value: str):
             key, val = part.split("=", 1)
             params[key.strip().lower()] = val.strip().strip('"')
     return ctype, params
+
+
+def normalize_username(value: str) -> str:
+    return str(value or "").strip().lower()
+
+
+def hash_password(password: str) -> str:
+    return hashlib.sha256(str(password).encode("utf-8")).hexdigest()
+
+
+def load_admin_users():
+    users = read_json(ADMIN_USERS_FILE)
+    if not isinstance(users, list):
+        users = []
+
+    changed = False
+    normalized = []
+    for user in users:
+        if not isinstance(user, dict):
+            continue
+        username = normalize_username(user.get("username", ""))
+        if not username:
+            continue
+
+        password_hash = user.get("passwordHash")
+        plain_password = user.get("password")
+        if not password_hash and plain_password is not None:
+            password_hash = hash_password(plain_password)
+            changed = True
+
+        if not password_hash:
+            continue
+
+        normalized.append({
+            "username": username,
+            "passwordHash": password_hash,
+            "createdAt": user.get("createdAt") or (datetime.utcnow().isoformat() + "Z"),
+        })
+
+    if not any(u.get("username") == "anis" for u in normalized):
+        normalized.append({
+            "username": "anis",
+            "passwordHash": hash_password("anis"),
+            "createdAt": datetime.utcnow().isoformat() + "Z",
+        })
+        changed = True
+
+    if changed:
+        write_json(ADMIN_USERS_FILE, normalized)
+    return normalized
+
+
+def save_admin_users(users):
+    write_json(ADMIN_USERS_FILE, users)
+
+
+def authenticate_admin(username: str, password: str) -> bool:
+    u = normalize_username(username)
+    p_hash = hash_password(password)
+    users = load_admin_users()
+    return any(item.get("username") == u and item.get("passwordHash") == p_hash for item in users)
 
 
 def get_client_ip(handler: BaseHTTPRequestHandler) -> str:
@@ -149,6 +221,12 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/api/videos":
             self._send_json(read_json(VIDEOS_FILE))
+            return
+
+        if path == "/api/admin-users":
+            users = load_admin_users()
+            public_users = [{"username": u.get("username"), "createdAt": u.get("createdAt")} for u in users]
+            self._send_json({"users": public_users, "count": len(public_users)})
             return
 
         if path.startswith("/uploads/"):
@@ -265,7 +343,7 @@ class Handler(BaseHTTPRequestHandler):
             username = str(payload.get("username", "")).strip()
             password = str(payload.get("password", "")).strip()
             ip = get_client_ip(self)
-            ok = username == "anis" and password == "anis"
+            ok = authenticate_admin(username, password)
 
             events = read_json(EVENTS_FILE)
             if not isinstance(events, dict):
@@ -279,6 +357,38 @@ class Handler(BaseHTTPRequestHandler):
             write_json(EVENTS_FILE, events)
 
             self._send_json({"ok": ok})
+            return
+
+        if path == "/api/admin-users":
+            content_length = int(self.headers.get("Content-Length", "0"))
+            raw = self.rfile.read(content_length)
+            try:
+                payload = json.loads(raw.decode("utf-8"))
+            except Exception:
+                self._send_json({"ok": False, "error": "payload invalide"}, 400)
+                return
+
+            username = normalize_username(payload.get("username", ""))
+            password = str(payload.get("password", "")).strip()
+            if len(username) < 3:
+                self._send_json({"ok": False, "error": "username trop court"}, 400)
+                return
+            if len(password) < 4:
+                self._send_json({"ok": False, "error": "mot de passe trop court"}, 400)
+                return
+
+            users = load_admin_users()
+            if any(u.get("username") == username for u in users):
+                self._send_json({"ok": False, "error": "compte deja existant"}, 400)
+                return
+
+            users.append({
+                "username": username,
+                "passwordHash": hash_password(password),
+                "createdAt": datetime.utcnow().isoformat() + "Z",
+            })
+            save_admin_users(users)
+            self._send_json({"ok": True, "username": username})
             return
 
         self.send_error(404)
