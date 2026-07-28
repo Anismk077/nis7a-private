@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang='fr'>
+<head>
+  <meta charset='utf-8'>
+  <meta name='viewport' content='width=device-width,initial-scale=1'>
+  <title>Utilisateurs - NIS7A</title>
+  <link rel='stylesheet' href='../css/style.css'>
+  <link href='https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap' rel='stylesheet'>
+</head>
+<body class='admin'>
+  <aside class='sidebar'>
+    <div>
+      <div class='brand-mark'>N</div>
+      <h2>NIS7A</h2>
+      <p>Admin Center</p>
+    </div>
+    <nav>
+      <a href='dashboard.html'>Dashboard</a>
+      <a href='series.html'>Séries</a>
+      <a href='films.html'>Films</a>
+      <a href='upload.html'>Upload</a>
+      <a class='active' href='users.html'>Utilisateurs</a>
+      <a href='statistics.html'>Statistiques</a>
+      <a href='settings.html'>Paramètres</a>
+    </nav>
+  </aside>
+
+  <main class='dashboard-main'>
+    <header class='dashboard-header'>
+      <div>
+        <span class='section-kicker'>Utilisateurs</span>
+        <h1>Gestion des utilisateurs</h1>
+        <p>Consultez les profils, permissions et activité.</p>
+      </div>
+      <a class='btn' href='dashboard.html'>Retour</a>
+    </header>
+
+    <section class='content-grid'>
+      <div class='panel-card'>
+        <div class='panel-head'><h3>Utilisateurs récents</h3><span>86 actifs</span></div>
+        <div class='progress-list'>
+          <div class='progress-item'>
+            <div class='progress-label'><span>Admin</span><strong>2</strong></div>
+            <div class='progress-bar'><span style='width: 100%'></span></div>
+          </div>
+          <div class='progress-item'>
+            <div class='progress-label'><span>Standard</span><strong>84</strong></div>
+            <div class='progress-bar'><span style='width: 84%'></span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class='panel-card'>
+        <div class='panel-head'><h3>Actions</h3><span>Rapide</span></div>
+        <div class='quick-actions'>
+          <article class='action-card'>👤 Ajouter un user</article>
+          <article class='action-card'>🔒 Bloquer</article>
+          <article class='action-card'>✉ Envoyer un mail</article>
+          <article class='action-card'>⚙ Gérer les droits</article>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

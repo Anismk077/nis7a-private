@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang='fr'>
+<head>
+  <meta charset='utf-8'>
+  <meta name='viewport' content='width=device-width,initial-scale=1'>
+  <title>Dashboard NIS7A</title>
+  <link rel='stylesheet' href='../css/style.css'>
+  <link href='https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap' rel='stylesheet'>
+</head>
+<body class='admin'>
+  <aside class='sidebar'>
+    <div>
+      <div class='brand-mark'>N</div>
+      <h2>NIS7A</h2>
+      <p>Admin Center</p>
+    </div>
+    <nav>
+      <a class='active' href='dashboard.html'>Dashboard</a>
+      <a href='series.html'>Séries</a>
+      <a href='films.html'>Films</a>
+      <a href='upload.html'>Upload</a>
+      <a href='users.html'>Utilisateurs</a>
+      <a href='statistics.html'>Statistiques</a>
+      <a href='settings.html'>Paramètres</a>
+    </nav>
+  </aside>
+
+  <main class='dashboard-main'>
+    <header class='dashboard-header'>
+      <div>
+        <span class='section-kicker'>Vue d’ensemble</span>
+        <h1>Tableau de bord NIS7A</h1>
+        <p>Suivi des téléchargements, des vidéos, des épisodes et de l’activité de votre application.</p>
+      </div>
+      <a class='btn' href='../index.html'>Voir le site public</a>
+    </header>
+
+    <section class='stats-grid'>
+      <article class='metric metric-accent'>
+        <div class='metric-icon'>⬇</div>
+        <div>
+          <h2 id='downloads'>0</h2>
+          <p>Téléchargements</p>
+          <span>Temps réel</span>
+        </div>
+      </article>
+      <article class='metric'>
+        <div class='metric-icon'>👥</div>
+        <div>
+          <h2 id='users'>0</h2>
+          <p>Utilisateurs actifs</p>
+          <span>Depuis la base</span>
+        </div>
+      </article>
+      <article class='metric'>
+        <div class='metric-icon'>🎬</div>
+        <div>
+          <h2 id='episodes'>0</h2>
+          <p>Épisodes</p>
+          <span>Mis à jour automatiquement</span>
+        </div>
+      </article>
+      <article class='metric'>
+        <div class='metric-icon'>✨</div>
+        <div>
+          <h2 id='series'>0</h2>
+          <p>Séries / Animes</p>
+          <span>Catalogue actuel</span>
+        </div>
+      </article>
+    </section>
+
+    <section class='content-grid'>
+      <div class='panel-card'>
+        <div class='panel-head'>
+          <h3>Progression du contenu</h3>
+          <span>En ligne</span>
+        </div>
+        <div class='progress-list'>
+          <div class='progress-item'>
+            <div class='progress-label'><span>Vidéos</span><strong>350</strong></div>
+            <div class='progress-bar'><span style='width: 88%'></span></div>
+          </div>
+          <div class='progress-item'>
+            <div class='progress-label'><span>Épisodes</span><strong>124</strong></div>
+            <div class='progress-bar'><span style='width: 76%'></span></div>
+          </div>
+          <div class='progress-item'>
+            <div class='progress-label'><span>Anime</span><strong>18</strong></div>
+            <div class='progress-bar'><span style='width: 64%'></span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class='panel-card'>
+        <div class='panel-head'>
+          <h3>Actions rapides</h3>
+          <span>Prêt</span>
+        </div>
+        <div class='quick-actions'>
+          <article class='action-card'>➕ Ajouter une série</article>
+          <article class='action-card'>⬆️ Envoyer une vidéo</article>
+          <article class='action-card'>🖼 Ajouter une affiche</article>
+          <article class='action-card'>⚙ Configurer l’app</article>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script src='../js/script.js'></script>
+  <script>
+    const refreshDashboard = async () => {
+      const [statsRes, videosRes] = await Promise.all([
+        fetch('/api/stats'),
+        fetch('/api/videos')
+      ]);
+      const stats = await statsRes.json();
+      const videos = await videosRes.json();
+
+      document.getElementById('downloads').textContent = Number(stats.downloads || 0).toLocaleString('fr-FR');
+      document.getElementById('users').textContent = Number(stats.users || 0).toLocaleString('fr-FR');
+      document.getElementById('episodes').textContent = Number(stats.episodes || 0).toLocaleString('fr-FR');
+      document.getElementById('series').textContent = Number(stats.series || 0).toLocaleString('fr-FR');
+
+      const videosLabel = document.querySelector('.progress-list .progress-item:nth-child(1) strong');
+      if (videosLabel) videosLabel.textContent = videos.length.toString();
+    };
+
+    refreshDashboard();
+  </script>
+</body>
+</html>

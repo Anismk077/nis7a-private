@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang='fr'>
+<head>
+  <meta charset='utf-8'>
+  <meta name='viewport' content='width=device-width,initial-scale=1'>
+  <title>Admin NIS7A</title>
+  <link rel='stylesheet' href='../css/style.css'>
+  <link href='https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap' rel='stylesheet'>
+</head>
+<body class='center'>
+  <div class='panel'>
+    <div class='brand'>N</div>
+    <h1>Connexion Admin</h1>
+    <p class='subtitle'>Accédez rapidement au tableau de bord de NIS7A.</p>
+    <form id='loginForm'>
+      <label class='field'>
+        <span>Identifiant</span>
+        <input id='username' placeholder='Votre identifiant' autocomplete='username'>
+      </label>
+      <label class='field'>
+        <span>Mot de passe</span>
+        <div class='password-wrap'>
+          <input id='password' type='password' placeholder='Votre mot de passe' autocomplete='current-password'>
+          <button class='password-toggle' type='button' aria-label='Afficher le mot de passe'>👁</button>
+        </div>
+      </label>
+      <button class='btn' type='submit'>Se connecter</button>
+    </form>
+    <div id='loginError' class='error' aria-live='polite'></div>
+    <p class='help'>Accès réservé à l’administration.</p>
+  </div>
+  <script src='../js/script.js'></script>
+  <script>
+    const form = document.getElementById('loginForm');
+    const passwordInput = document.getElementById('password');
+    const passwordToggle = document.querySelector('.password-toggle');
+
+    passwordToggle?.addEventListener('click', () => {
+      const isHidden = passwordInput.type === 'password';
+      passwordInput.type = isHidden ? 'text' : 'password';
+      passwordToggle.textContent = isHidden ? '🙈' : '👁';
+      passwordToggle.setAttribute('aria-label', isHidden ? 'Masquer le mot de passe' : 'Afficher le mot de passe');
+    });
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      const username = document.getElementById('username').value.trim();
+      const password = passwordInput.value.trim();
+      if (username === 'anis' && password === 'anis') {
+        document.body.classList.add('is-transitioning');
+        setTimeout(() => {
+          window.location.href = 'dashboard.html';
+        }, 260);
+      } else {
+        document.getElementById('loginError').textContent = 'Identifiant ou mot de passe incorrect.';
+      }
+    });
+  </script>
+</body>
+</html>

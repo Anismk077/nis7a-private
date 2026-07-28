@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang='fr'>
+<head>
+  <meta charset='utf-8'>
+  <meta name='viewport' content='width=device-width,initial-scale=1'>
+  <title>Statistiques - NIS7A</title>
+  <link rel='stylesheet' href='../css/style.css'>
+  <link href='https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap' rel='stylesheet'>
+</head>
+<body class='admin'>
+  <aside class='sidebar'>
+    <div>
+      <div class='brand-mark'>N</div>
+      <h2>NIS7A</h2>
+      <p>Admin Center</p>
+    </div>
+    <nav>
+      <a href='dashboard.html'>Dashboard</a>
+      <a href='series.html'>Séries</a>
+      <a href='films.html'>Films</a>
+      <a href='upload.html'>Upload</a>
+      <a href='users.html'>Utilisateurs</a>
+      <a class='active' href='statistics.html'>Statistiques</a>
+      <a href='settings.html'>Paramètres</a>
+    </nav>
+  </aside>
+
+  <main class='dashboard-main'>
+    <header class='dashboard-header'>
+      <div>
+        <span class='section-kicker'>Analyse</span>
+        <h1>Statistiques</h1>
+        <p>Suivez la progression des contenus et l’activité globale.</p>
+      </div>
+      <a class='btn' href='dashboard.html'>Retour</a>
+    </header>
+
+    <section class='stats-grid'>
+      <article class='metric'>
+        <div class='metric-icon'>📈</div>
+        <div>
+          <h2 id='downloads'>0</h2>
+          <p>Téléchargements</p>
+        </div>
+      </article>
+      <article class='metric'>
+        <div class='metric-icon'>👥</div>
+        <div>
+          <h2 id='users'>0</h2>
+          <p>Utilisateurs</p>
+        </div>
+      </article>
+      <article class='metric'>
+        <div class='metric-icon'>🎬</div>
+        <div>
+          <h2 id='episodes'>0</h2>
+          <p>Épisodes</p>
+        </div>
+      </article>
+      <article class='metric'>
+        <div class='metric-icon'>✨</div>
+        <div>
+          <h2 id='series'>0</h2>
+          <p>Séries</p>
+        </div>
+      </article>
+    </section>
+  </main>
+  <script>
+    const refreshStats = async () => {
+      const res = await fetch('/api/stats');
+      const stats = await res.json();
+      document.getElementById('downloads').textContent = stats.downloads;
+      document.getElementById('users').textContent = stats.users;
+      document.getElementById('episodes').textContent = stats.episodes;
+      document.getElementById('series').textContent = stats.series;
+    };
+    refreshStats();
+  </script>
+</body>
+</html>

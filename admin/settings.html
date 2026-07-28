@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang='fr'>
+<head>
+  <meta charset='utf-8'>
+  <meta name='viewport' content='width=device-width,initial-scale=1'>
+  <title>Paramètres - NIS7A</title>
+  <link rel='stylesheet' href='../css/style.css'>
+  <link href='https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap' rel='stylesheet'>
+</head>
+<body class='admin'>
+  <aside class='sidebar'>
+    <div>
+      <div class='brand-mark'>N</div>
+      <h2>NIS7A</h2>
+      <p>Admin Center</p>
+    </div>
+    <nav>
+      <a href='dashboard.html'>Dashboard</a>
+      <a href='series.html'>Séries</a>
+      <a href='films.html'>Films</a>
+      <a href='upload.html'>Upload</a>
+      <a href='users.html'>Utilisateurs</a>
+      <a href='statistics.html'>Statistiques</a>
+      <a class='active' href='settings.html'>Paramètres</a>
+    </nav>
+  </aside>
+
+  <main class='dashboard-main'>
+    <header class='dashboard-header'>
+      <div>
+        <span class='section-kicker'>Configuration</span>
+        <h1>Paramètres</h1>
+        <p>Gérez les réglages de votre interface et de votre application.</p>
+      </div>
+      <a class='btn' href='dashboard.html'>Retour</a>
+    </header>
+
+    <section class='content-grid'>
+      <div class='panel-card'>
+        <div class='panel-head'><h3>Réglages généraux</h3><span>Actif</span></div>
+        <div class='progress-list'>
+          <div class='progress-item'>
+            <div class='progress-label'><span>Mode sombre</span><strong>Oui</strong></div>
+          </div>
+          <div class='progress-item'>
+            <div class='progress-label'><span>Notifications</span><strong>Activées</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <div class='panel-card'>
+        <div class='panel-head'><h3>Thèmes applicables</h3><span>Admin</span></div>
+        <div class='theme-panel'>
+          <p>Choisissez le thème global à appliquer à tout le site depuis l’administration.</p>
+          <div class='theme-options'>
+            <button class='theme-option' data-theme='default' type='button'>Standard</button>
+            <button class='theme-option' data-theme='christmas' type='button'>Noël</button>
+            <button class='theme-option' data-theme='midnight' type='button'>Nuit</button>
+            <button class='theme-option' data-theme='aurora' type='button'>Aurora</button>
+            <button class='theme-option' data-theme='sunset' type='button'>Sunset</button>
+            <button class='theme-option' data-theme='neon' type='button'>Neon</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script src='../js/script.js'></script>
+</body>
+</html>

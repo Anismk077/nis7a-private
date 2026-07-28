@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang='fr'>
+<head>
+  <meta charset='utf-8'>
+  <meta name='viewport' content='width=device-width,initial-scale=1'>
+  <title>Upload - NIS7A</title>
+  <link rel='stylesheet' href='../css/style.css'>
+  <link href='https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap' rel='stylesheet'>
+</head>
+<body class='admin'>
+  <aside class='sidebar'>
+    <div>
+      <div class='brand-mark'>N</div>
+      <h2>NIS7A</h2>
+      <p>Admin Center</p>
+    </div>
+    <nav>
+      <a href='dashboard.html'>Dashboard</a>
+      <a href='series.html'>Séries</a>
+      <a href='films.html'>Films</a>
+      <a class='active' href='upload.html'>Upload</a>
+      <a href='users.html'>Utilisateurs</a>
+      <a href='statistics.html'>Statistiques</a>
+      <a href='settings.html'>Paramètres</a>
+    </nav>
+  </aside>
+
+  <main class='dashboard-main'>
+    <header class='dashboard-header'>
+      <div>
+        <span class='section-kicker'>Médias</span>
+        <h1>Upload de contenu</h1>
+        <p>Ajoutez vos vidéos, épisodes ou fichiers multimédias.</p>
+      </div>
+      <a class='btn' href='dashboard.html'>Retour</a>
+    </header>
+
+    <section class='content-grid'>
+      <div class='panel-card'>
+        <div class='panel-head'><h3>Envoyer un fichier</h3><span>Prêt</span></div>
+        <form id='uploadForm' class='upload-form'>
+          <label class='upload-zone' for='videoFile'>
+            <span class='upload-icon'>📽️</span>
+            <strong>Cliquer pour choisir une vidéo</strong>
+            <span>MP4, WebM ou Ogg • glisser-déposer ou sélectionner depuis votre appareil</span>
+          </label>
+          <input id='videoFile' type='file' accept='video/mp4,video/webm,video/ogg' required hidden>
+          <div class='field'>
+            <label for='uploader'>Votre nom (affiché comme uploader)</label>
+            <input id='uploader' name='uploader' type='text' placeholder='admin' value='admin'>
+          </div>
+          <div id='selectedFileName' class='selected-file'>Aucune vidéo sélectionnée.</div>
+          <button class='btn' type='submit'>Uploader la vidéo</button>
+        </form>
+        <div id='uploadStatus' class='upload-status'>Aucune vidéo encore envoyée.</div>
+      </div>
+
+      <div class='panel-card'>
+        <div class='panel-head'><h3>Vidéos enregistrées</h3><span>Serveur</span></div>
+        <div id='videoList' class='video-list'></div>
+      </div>
+    </section>
+  </main>
+  <script>
+    const form = document.getElementById('uploadForm');
+    const fileInput = document.getElementById('videoFile');
+    const status = document.getElementById('uploadStatus');
+    const videoList = document.getElementById('videoList');
+    const selectedFileName = document.getElementById('selectedFileName');
+
+    const loadVideos = async () => {
+      const res = await fetch('/api/videos');
+      const videos = await res.json();
+      videoList.innerHTML = videos.length ? videos.map(v => `<div class='video-item'><strong>${v.name}</strong><br><span>${(v.size / 1024 / 1024).toFixed(2)} Mo</span><br><video controls src='${v.path}' style='width:100%;margin-top:8px;border-radius:12px;'></video></div>`).join('') : '<p>Aucune vidéo disponible.</p>';
+    };
+
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files[0];
+      selectedFileName.textContent = file ? `Fichier choisi : ${file.name}` : 'Aucune vidéo sélectionnée.';
+    });
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!fileInput.files[0]) return;
+      const file = fileInput.files[0];
+      const formData = new FormData();
+      formData.append('video', file);
+      const uploaderVal = document.getElementById('uploader').value || 'admin';
+      status.textContent = 'Envoi en cours...';
+      const res = await fetch(`/api/upload?uploader=${encodeURIComponent(uploaderVal)}`, { method: 'POST', body: formData });
+      const data = await res.json();
+      status.textContent = data.ok ? `Vidéo enregistrée : ${file.name}` : 'Échec de l’envoi';
+      fileInput.value = '';
+      selectedFileName.textContent = 'Aucune vidéo sélectionnée.';
+      loadVideos();
+    });
+
+    loadVideos();
+  </script>
+</body>
+</html>
