@@ -57,15 +57,54 @@
       <div class='panel-card'>
         <div class='panel-head'><h3>Actions rapides</h3><span>Prêt</span></div>
         <div class='quick-actions'>
-          <article class='action-card'>🎞 Ajouter un film</article>
-          <article class='action-card'>📝 Modifier</article>
-          <article class='action-card'>🗂 Classer</article>
-          <article class='action-card'>📦 Categorie</article>
+          <button type='button' class='action-card action-btn' data-action='add'>🎞 Ajouter un film</button>
+          <button type='button' class='action-card action-btn' data-action='edit'>📝 Modifier</button>
+          <button type='button' class='action-card action-btn' data-action='sort'>🗂 Classer</button>
+          <button type='button' class='action-card action-btn' data-action='category'>📦 Catégorie</button>
         </div>
+        <div id='actionStatus' class='upload-status'>Choisissez une action rapide.</div>
+      </div>
+
+      <div class='panel-card'>
+        <div class='panel-head'><h3>Liste des films</h3><span id='listInfo'>0 élément</span></div>
+        <div id='filmList' class='video-list'></div>
       </div>
     </section>
   </main>
   <script>
+    const state = {
+      videos: [],
+      sortAsc: true,
+      aliases: JSON.parse(localStorage.getItem('filmAliases') || '{}'),
+      categories: JSON.parse(localStorage.getItem('filmCategories') || '{}')
+    };
+
+    const saveLocalMaps = () => {
+      localStorage.setItem('filmAliases', JSON.stringify(state.aliases));
+      localStorage.setItem('filmCategories', JSON.stringify(state.categories));
+    };
+
+    const displayName = (video) => state.aliases[video.name] || video.name;
+
+    const renderFilmList = () => {
+      const list = document.getElementById('filmList');
+      const listInfo = document.getElementById('listInfo');
+      const items = [...state.videos].sort((a, b) => {
+        const left = displayName(a).toLowerCase();
+        const right = displayName(b).toLowerCase();
+        return state.sortAsc ? left.localeCompare(right) : right.localeCompare(left);
+      });
+
+      listInfo.textContent = `${items.length} élément${items.length > 1 ? 's' : ''}`;
+      list.innerHTML = items.length
+        ? items.map((video) => {
+            const cat = state.categories[video.name] || 'Non classé';
+            const sizeMo = Number(video.size || 0) / (1024 * 1024);
+            return `<div class='video-item'><strong>${displayName(video)}</strong><br><span>Catégorie: ${cat}</span><br><span>Taille: ${sizeMo.toFixed(2)} Mo</span><br><a class='btn' style='display:inline-block;margin-top:8px;width:auto;padding:8px 12px' href='${video.path}' target='_blank'>Ouvrir</a></div>`;
+          }).join('')
+        : '<p>Aucun film pour le moment.</p>';
+    };
+
     const refreshFilms = async () => {
       const [statsRes, videosRes] = await Promise.all([
         fetch('/api/stats'),
@@ -83,9 +122,74 @@
       document.getElementById('filmsBar').style.width = `${Math.min(100, films * 10)}%`;
       document.getElementById('videosBar').style.width = `${Math.min(100, totalVideos * 8)}%`;
 
-      const last = totalVideos > 0 ? videos[0] : null;
+      state.videos = Array.isArray(videos) ? videos : [];
+      const last = totalVideos > 0 ? state.videos[0] : null;
       document.getElementById('lastUpload').textContent = last ? (last.name || '-') : '-';
+      renderFilmList();
     };
+
+    const status = document.getElementById('actionStatus');
+    document.querySelectorAll('.action-btn').forEach((button) => {
+      button.addEventListener('click', () => {
+        const action = button.dataset.action;
+
+        if (action === 'add') {
+          status.textContent = 'Redirection vers la page Upload...';
+          setTimeout(() => {
+            window.location.href = 'upload.html';
+          }, 200);
+          return;
+        }
+
+        if (!state.videos.length) {
+          status.textContent = 'Aucun film disponible pour cette action.';
+          return;
+        }
+
+        if (action === 'sort') {
+          state.sortAsc = !state.sortAsc;
+          renderFilmList();
+          status.textContent = `Tri appliqué: ${state.sortAsc ? 'A → Z' : 'Z → A'}.`;
+          return;
+        }
+
+        const fileName = prompt('Entrez le nom exact du fichier (ex: test-video_0.mp4)');
+        if (!fileName) {
+          status.textContent = 'Action annulée.';
+          return;
+        }
+        const exists = state.videos.find((v) => v.name === fileName);
+        if (!exists) {
+          status.textContent = 'Fichier introuvable dans la liste.';
+          return;
+        }
+
+        if (action === 'edit') {
+          const newName = prompt('Nouveau titre affiché', displayName(exists));
+          if (!newName) {
+            status.textContent = 'Action annulée.';
+            return;
+          }
+          state.aliases[fileName] = newName;
+          saveLocalMaps();
+          renderFilmList();
+          status.textContent = `Titre mis à jour pour ${fileName}.`;
+          return;
+        }
+
+        if (action === 'category') {
+          const newCat = prompt('Nom de la catégorie', state.categories[fileName] || 'Action');
+          if (!newCat) {
+            status.textContent = 'Action annulée.';
+            return;
+          }
+          state.categories[fileName] = newCat;
+          saveLocalMaps();
+          renderFilmList();
+          status.textContent = `Catégorie enregistrée pour ${fileName}.`;
+        }
+      });
+    });
 
     refreshFilms();
   </script>

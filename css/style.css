@@ -516,6 +516,13 @@ input:focus {
   border-color: rgba(110, 231, 255, 0.3);
 }
 
+.action-btn {
+  border: none;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+}
+
 .upload-form {
   display: grid;
   gap: 12px;
