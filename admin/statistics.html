@@ -105,8 +105,21 @@
     </section>
   </main>
   <script>
+    const ensureAuth = async () => {
+      const res = await fetch('/api/me', { credentials: 'include' });
+      if (!res.ok) {
+        window.location.href = 'login.html';
+        return false;
+      }
+      return true;
+    };
+
     const refreshStats = async () => {
-      const res = await fetch('/api/stats');
+      const res = await fetch('/api/stats', { credentials: 'include' });
+      if (!res.ok) {
+        window.location.href = 'login.html';
+        return;
+      }
       const stats = await res.json();
       document.getElementById('downloads').textContent = stats.downloads ?? 0;
       document.getElementById('users').textContent = stats.users ?? 0;
@@ -127,7 +140,10 @@
           }).join('')
         : '<p>Aucune tentative enregistrée.</p>';
     };
-    refreshStats();
+    ensureAuth().then((ok) => {
+      if (!ok) return;
+      refreshStats();
+    });
   </script>
 </body>
 </html>

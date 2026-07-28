@@ -78,16 +78,16 @@
         </div>
         <div class='progress-list'>
           <div class='progress-item'>
-            <div class='progress-label'><span>Vidéos</span><strong>350</strong></div>
-            <div class='progress-bar'><span style='width: 88%'></span></div>
+            <div class='progress-label'><span>Vidéos</span><strong id='progressVideos'>0</strong></div>
+            <div class='progress-bar'><span id='progressVideosBar' style='width: 0%'></span></div>
           </div>
           <div class='progress-item'>
-            <div class='progress-label'><span>Épisodes</span><strong>124</strong></div>
-            <div class='progress-bar'><span style='width: 76%'></span></div>
+            <div class='progress-label'><span>Épisodes</span><strong id='progressEpisodes'>0</strong></div>
+            <div class='progress-bar'><span id='progressEpisodesBar' style='width: 0%'></span></div>
           </div>
           <div class='progress-item'>
-            <div class='progress-label'><span>Anime</span><strong>18</strong></div>
-            <div class='progress-bar'><span style='width: 64%'></span></div>
+            <div class='progress-label'><span>Anime</span><strong id='progressAnime'>0</strong></div>
+            <div class='progress-bar'><span id='progressAnimeBar' style='width: 0%'></span></div>
           </div>
         </div>
       </div>
@@ -108,24 +108,51 @@
   </main>
   <script src='../js/script.js'></script>
   <script>
+    const ensureAuth = async () => {
+      const res = await fetch('/api/me', { credentials: 'include' });
+      if (!res.ok) {
+        window.location.href = 'login.html';
+        return false;
+      }
+      return true;
+    };
+
     const refreshDashboard = async () => {
       const [statsRes, videosRes] = await Promise.all([
-        fetch('/api/stats'),
-        fetch('/api/videos')
+        fetch('/api/stats', { credentials: 'include' }),
+        fetch('/api/videos', { credentials: 'include' })
       ]);
+
+      if (!statsRes.ok || !videosRes.ok) {
+        window.location.href = 'login.html';
+        return;
+      }
+
       const stats = await statsRes.json();
       const videos = await videosRes.json();
+      const videosCount = Array.isArray(videos) ? videos.length : 0;
 
       document.getElementById('downloads').textContent = Number(stats.downloads || 0).toLocaleString('fr-FR');
       document.getElementById('users').textContent = Number(stats.users || 0).toLocaleString('fr-FR');
       document.getElementById('episodes').textContent = Number(stats.episodes || 0).toLocaleString('fr-FR');
       document.getElementById('series').textContent = Number(stats.series || 0).toLocaleString('fr-FR');
 
-      const videosLabel = document.querySelector('.progress-list .progress-item:nth-child(1) strong');
-      if (videosLabel) videosLabel.textContent = videos.length.toString();
+      const episodesCount = Number(stats.episodes || 0);
+      const animeCount = Number(stats.series || 0);
+
+      document.getElementById('progressVideos').textContent = videosCount.toString();
+      document.getElementById('progressEpisodes').textContent = episodesCount.toString();
+      document.getElementById('progressAnime').textContent = animeCount.toString();
+
+      document.getElementById('progressVideosBar').style.width = `${Math.min(100, videosCount * 8)}%`;
+      document.getElementById('progressEpisodesBar').style.width = `${Math.min(100, episodesCount * 8)}%`;
+      document.getElementById('progressAnimeBar').style.width = `${Math.min(100, animeCount * 10)}%`;
     };
 
-    refreshDashboard();
+    ensureAuth().then((ok) => {
+      if (!ok) return;
+      refreshDashboard();
+    });
   </script>
 </body>
 </html>
