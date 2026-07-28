@@ -705,16 +705,27 @@ class Handler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     host = os.environ.get("HOST", "0.0.0.0")
-    port = int(os.environ.get("PORT", "8000"))
-    try:
-        server = ThreadingHTTPServer((host, port), Handler)
-    except OSError as exc:
-        if "Address already in use" in str(exc) or "Operation not permitted" in str(exc):
-            alt_port = 8001
-            server = ThreadingHTTPServer((host, alt_port), Handler)
-            port = alt_port
-        else:
-            raise
+    requested_port = int(os.environ.get("PORT", "8000"))
+
+    # Try a short range of ports to avoid startup failure when 8000/8001 are occupied.
+    candidate_ports = [requested_port]
+    candidate_ports.extend(p for p in range(8000, 8011) if p not in candidate_ports)
+
+    server = None
+    port = requested_port
+    last_exc = None
+    for candidate in candidate_ports:
+        try:
+            server = ThreadingHTTPServer((host, candidate), Handler)
+            port = candidate
+            break
+        except OSError as exc:
+            last_exc = exc
+            continue
+
+    if server is None:
+        raise last_exc
+
     print(f"Serveur lance sur http://{host}:{port}")
     try:
         server.serve_forever()
