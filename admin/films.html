@@ -37,19 +37,19 @@
 
     <section class='content-grid'>
       <div class='panel-card'>
-        <div class='panel-head'><h3>Films récents</h3><span>12 au total</span></div>
+        <div class='panel-head'><h3>Films récents</h3><span id='filmsTotal'>0 au total</span></div>
         <div class='progress-list'>
           <div class='progress-item'>
-            <div class='progress-label'><span>Action</span><strong>5 films</strong></div>
-            <div class='progress-bar'><span style='width: 86%'></span></div>
+            <div class='progress-label'><span>Films publiés</span><strong id='filmsCount'>0 film</strong></div>
+            <div class='progress-bar'><span id='filmsBar' style='width: 0%'></span></div>
           </div>
           <div class='progress-item'>
-            <div class='progress-label'><span>Comédie</span><strong>4 films</strong></div>
-            <div class='progress-bar'><span='width: 72%'></span></div>
+            <div class='progress-label'><span>Vidéos au total</span><strong id='videosCount'>0</strong></div>
+            <div class='progress-bar'><span id='videosBar' style='width: 0%'></span></div>
           </div>
           <div class='progress-item'>
-            <div class='progress-label'><span>Drame</span><strong>3 films</strong></div>
-            <div class='progress-bar'><span style='width: 64%'></span></div>
+            <div class='progress-label'><span>Dernier upload</span><strong id='lastUpload'>-</strong></div>
+            <div class='progress-bar'><span style='width: 100%'></span></div>
           </div>
         </div>
       </div>
@@ -65,5 +65,29 @@
       </div>
     </section>
   </main>
+  <script>
+    const refreshFilms = async () => {
+      const [statsRes, videosRes] = await Promise.all([
+        fetch('/api/stats'),
+        fetch('/api/videos')
+      ]);
+      const stats = await statsRes.json();
+      const videos = await videosRes.json();
+
+      const films = Number(stats.series || 0);
+      const totalVideos = Array.isArray(videos) ? videos.length : 0;
+
+      document.getElementById('filmsTotal').textContent = `${films} au total`;
+      document.getElementById('filmsCount').textContent = `${films} film${films > 1 ? 's' : ''}`;
+      document.getElementById('videosCount').textContent = totalVideos.toString();
+      document.getElementById('filmsBar').style.width = `${Math.min(100, films * 10)}%`;
+      document.getElementById('videosBar').style.width = `${Math.min(100, totalVideos * 8)}%`;
+
+      const last = totalVideos > 0 ? videos[0] : null;
+      document.getElementById('lastUpload').textContent = last ? (last.name || '-') : '-';
+    };
+
+    refreshFilms();
+  </script>
 </body>
 </html>

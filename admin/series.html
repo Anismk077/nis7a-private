@@ -37,19 +37,19 @@
 
     <section class='content-grid'>
       <div class='panel-card'>
-        <div class='panel-head'><h3>Liste des séries</h3><span>8 disponibles</span></div>
+        <div class='panel-head'><h3>Liste des séries</h3><span id='seriesAvailable'>0 disponible</span></div>
         <div class='progress-list'>
           <div class='progress-item'>
-            <div class='progress-label'><span>One Piece</span><strong>48 épisodes</strong></div>
-            <div class='progress-bar'><span style='width: 92%'></span></div>
+            <div class='progress-label'><span>Séries enregistrées</span><strong id='seriesCount'>0</strong></div>
+            <div class='progress-bar'><span id='seriesBar' style='width: 0%'></span></div>
           </div>
           <div class='progress-item'>
-            <div class='progress-label'><span>Attack on Titan</span><strong>24 épisodes</strong></div>
-            <div class='progress-bar'><span style='width: 78%'></span></div>
+            <div class='progress-label'><span>Épisodes publiés</span><strong id='episodesCount'>0</strong></div>
+            <div class='progress-bar'><span id='episodesBar' style='width: 0%'></span></div>
           </div>
           <div class='progress-item'>
-            <div class='progress-label'><span>Demon Slayer</span><strong>18 épisodes</strong></div>
-            <div class='progress-bar'><span style='width: 84%'></span></div>
+            <div class='progress-label'><span>Etat actuel</span><strong id='seriesState'>Aucune série</strong></div>
+            <div class='progress-bar'><span style='width: 100%'></span></div>
           </div>
         </div>
       </div>
@@ -65,5 +65,24 @@
       </div>
     </section>
   </main>
+  <script>
+    const refreshSeries = async () => {
+      const res = await fetch('/api/stats');
+      const stats = await res.json();
+
+      const series = Number(stats.series || 0);
+      const episodes = Number(stats.episodes || 0);
+
+      document.getElementById('seriesAvailable').textContent = `${series} disponible${series > 1 ? 's' : ''}`;
+      document.getElementById('seriesCount').textContent = series.toString();
+      document.getElementById('episodesCount').textContent = episodes.toString();
+      document.getElementById('seriesState').textContent = series === 0 ? 'Aucune série' : 'Catalogue en ligne';
+
+      document.getElementById('seriesBar').style.width = `${Math.min(100, series * 10)}%`;
+      document.getElementById('episodesBar').style.width = `${Math.min(100, episodes * 8)}%`;
+    };
+
+    refreshSeries();
+  </script>
 </body>
 </html>

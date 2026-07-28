@@ -37,15 +37,15 @@
 
     <section class='content-grid'>
       <div class='panel-card'>
-        <div class='panel-head'><h3>Utilisateurs récents</h3><span>86 actifs</span></div>
+        <div class='panel-head'><h3>Utilisateurs récents</h3><span id='usersActive'>0 actif</span></div>
         <div class='progress-list'>
           <div class='progress-item'>
-            <div class='progress-label'><span>Admin</span><strong>2</strong></div>
-            <div class='progress-bar'><span style='width: 100%'></span></div>
+            <div class='progress-label'><span>Admin</span><strong id='adminUsers'>0</strong></div>
+            <div class='progress-bar'><span id='adminBar' style='width: 0%'></span></div>
           </div>
           <div class='progress-item'>
-            <div class='progress-label'><span>Standard</span><strong>84</strong></div>
-            <div class='progress-bar'><span style='width: 84%'></span></div>
+            <div class='progress-label'><span>Standard</span><strong id='standardUsers'>0</strong></div>
+            <div class='progress-bar'><span id='standardBar' style='width: 0%'></span></div>
           </div>
         </div>
       </div>
@@ -61,5 +61,26 @@
       </div>
     </section>
   </main>
+  <script>
+    const refreshUsers = async () => {
+      const res = await fetch('/api/stats');
+      const stats = await res.json();
+
+      const users = Number(stats.users || 0);
+      const admins = users > 0 ? 1 : 0;
+      const standard = Math.max(0, users - admins);
+
+      document.getElementById('usersActive').textContent = `${users} actif${users > 1 ? 's' : ''}`;
+      document.getElementById('adminUsers').textContent = admins.toString();
+      document.getElementById('standardUsers').textContent = standard.toString();
+
+      const adminPct = users > 0 ? Math.round((admins / users) * 100) : 0;
+      const standardPct = users > 0 ? Math.round((standard / users) * 100) : 0;
+      document.getElementById('adminBar').style.width = `${adminPct}%`;
+      document.getElementById('standardBar').style.width = `${standardPct}%`;
+    };
+
+    refreshUsers();
+  </script>
 </body>
 </html>
