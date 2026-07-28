@@ -34,6 +34,18 @@
     const form = document.getElementById('loginForm');
     const passwordInput = document.getElementById('password');
     const passwordToggle = document.querySelector('.password-toggle');
+    const loginError = document.getElementById('loginError');
+    const submitBtn = form.querySelector("button[type='submit']");
+
+    const setError = (message) => {
+      loginError.textContent = message || '';
+    };
+
+    const setSubmitting = (isSubmitting) => {
+      if (!submitBtn) return;
+      submitBtn.disabled = isSubmitting;
+      submitBtn.textContent = isSubmitting ? 'Connexion...' : 'Se connecter';
+    };
 
     passwordToggle?.addEventListener('click', () => {
       const isHidden = passwordInput.type === 'password';
@@ -47,21 +59,43 @@
       const username = document.getElementById('username').value.trim();
       const password = passwordInput.value.trim();
 
-      const res = await fetch('/api/admin-login', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
-      const data = await res.json();
+      if (!username || !password) {
+        setError('Veuillez remplir identifiant et mot de passe.');
+        return;
+      }
 
-      if (data.ok) {
-        document.body.classList.add('is-transitioning');
-        setTimeout(() => {
-          window.location.href = 'dashboard.html';
-        }, 260);
-      } else {
-        document.getElementById('loginError').textContent = 'Identifiant ou mot de passe incorrect.';
+      setError('');
+      setSubmitting(true);
+
+      try {
+        const res = await fetch('/api/admin-login', {
+          method: 'POST',
+          credentials: 'include',
+          cache: 'no-store',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+
+        let data = null;
+        try {
+          data = await res.json();
+        } catch (_) {
+          data = null;
+        }
+
+        if (res.ok && data && data.ok) {
+          document.body.classList.add('is-transitioning');
+          setTimeout(() => {
+            window.location.href = 'dashboard.html';
+          }, 260);
+          return;
+        }
+
+        setError('Identifiant ou mot de passe incorrect.');
+      } catch (error) {
+        setError('Serveur indisponible. Démarrez server.py puis réessayez.');
+      } finally {
+        setSubmitting(false);
       }
     });
   </script>
