@@ -1,19 +1,69 @@
 # NIS7A
 
-Projet web statique pour la présentation de l’application NIS7A.
+Application web NIS7A avec backend Python (auth admin, upload, stats, sessions).
 
-## Prévisualisation
-
-Ouvre le fichier `index.html` dans le navigateur, ou démarre un serveur local avec :
+## Lancer en local (recommande)
 
 ```bash
 cd /Users/anismarzouk/Desktop/ANIS\ APP
-python3 -m http.server 8000 --bind 0.0.0.0
+python3 server.py
 ```
 
-Puis visite : http://localhost:8000
+Le serveur affiche le port utilise au demarrage (ex: 8000, 8001, 8002...).
 
-Pour tester l’interface admin, utilise : http://localhost:8000/admin/login.html
+Pages utiles:
+- Site public: http://127.0.0.1:PORT/
+- Admin login: http://127.0.0.1:PORT/admin/login.html
 
-Identifiant : `anis`
-Mot de passe : `anis`
+Compte admin par defaut:
+- Identifiant: anis
+- Mot de passe: anis
+
+## Lancer avec Docker
+
+### Option A - Docker Compose (plus simple)
+
+```bash
+cd /Users/anismarzouk/Desktop/ANIS\ APP
+docker compose up -d --build
+```
+
+Arreter:
+
+```bash
+docker compose down
+```
+
+### Option B - Docker build/run
+
+```bash
+cd /Users/anismarzouk/Desktop/ANIS\ APP
+docker build -t nis7a-app .
+docker run -d --name nis7a-app -p 8000:8000 \
+	-e HOST=0.0.0.0 -e PORT=8000 \
+	-v "$(pwd)/data:/app/data" \
+	-v "$(pwd)/uploads:/app/uploads" \
+	nis7a-app
+```
+
+## Rendre le repo public
+
+1. Ouvre le repo GitHub `Anismk077/nis7a-private`.
+2. Va dans Settings -> General.
+3. En bas, section Danger Zone -> Change repository visibility.
+4. Choisis Public et confirme.
+
+## Recuperer sur ton vrai PC
+
+```bash
+git clone https://github.com/Anismk077/nis7a-private.git
+cd nis7a-private
+docker compose up -d --build
+```
+
+Puis ouvre:
+- http://127.0.0.1:8000/admin/login.html
+
+## Important securite
+
+Ton token GitHub a ete expose dans l'historique terminal. Revoque-le et cree un nouveau token immediatement.

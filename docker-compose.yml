@@ -1,0 +1,13 @@
+services:
+  nis7a:
+    build: .
+    container_name: nis7a-app
+    ports:
+      - "8000:8000"
+    environment:
+      HOST: 0.0.0.0
+      PORT: 8000
+    volumes:
+      - ./data:/app/data
+      - ./uploads:/app/uploads
+    restart: unless-stopped
