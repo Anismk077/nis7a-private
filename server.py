@@ -377,6 +377,19 @@ class Handler(BaseHTTPRequestHandler):
         ip = get_client_ip(self)
         current_user = get_authenticated_user(self)
 
+        if path == "/api/admin-logout":
+            cookie_token = parse_cookies(self.headers.get("Cookie", "")).get(SESSION_COOKIE)
+            if cookie_token:
+                revoke_session(cookie_token)
+            clear_cookie = f"{SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0"
+            self.send_response(302)
+            self.send_header("Location", "/admin/login.html")
+            self.send_header("Set-Cookie", clear_cookie)
+            self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
+            self.send_header("Pragma", "no-cache")
+            self.end_headers()
+            return
+
         if path.startswith("/admin/") and path != "/admin/login.html" and not current_user:
             self._redirect("/admin/login.html")
             return
