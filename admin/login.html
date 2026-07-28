@@ -42,11 +42,19 @@
       passwordToggle.setAttribute('aria-label', isHidden ? 'Masquer le mot de passe' : 'Afficher le mot de passe');
     });
 
-    form.addEventListener('submit', function (event) {
+    form.addEventListener('submit', async function (event) {
       event.preventDefault();
       const username = document.getElementById('username').value.trim();
       const password = passwordInput.value.trim();
-      if (username === 'anis' && password === 'anis') {
+
+      const res = await fetch('/api/admin-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+
+      if (data.ok) {
         document.body.classList.add('is-transitioning');
         setTimeout(() => {
           window.location.href = 'dashboard.html';

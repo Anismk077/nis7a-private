@@ -13,15 +13,19 @@ UPLOAD_DIR = BASE_DIR / "uploads"
 DATA_DIR = BASE_DIR / "data"
 STATS_FILE = DATA_DIR / "stats.json"
 VIDEOS_FILE = DATA_DIR / "videos.json"
+EVENTS_FILE = DATA_DIR / "events.json"
 
 UPLOAD_DIR.mkdir(exist_ok=True)
 DATA_DIR.mkdir(exist_ok=True)
 
 if not STATS_FILE.exists():
-    STATS_FILE.write_text(json.dumps({"downloads": 1240, "users": 86, "episodes": 124, "series": 28}, indent=2), encoding="utf-8")
+    STATS_FILE.write_text(json.dumps({"series": 0}, indent=2), encoding="utf-8")
 
 if not VIDEOS_FILE.exists():
     VIDEOS_FILE.write_text("[]", encoding="utf-8")
+
+if not EVENTS_FILE.exists():
+    EVENTS_FILE.write_text(json.dumps({"visits": [], "downloads": [], "adminLoginAttempts": []}, indent=2), encoding="utf-8")
 
 MIME_TYPES = {
     ".html": "text/html; charset=utf-8",
@@ -61,6 +65,47 @@ def parse_content_type(value: str):
     return ctype, params
 
 
+def get_client_ip(handler: BaseHTTPRequestHandler) -> str:
+    xff = handler.headers.get("X-Forwarded-For", "").strip()
+    if xff:
+        return xff.split(",")[0].strip()
+    if handler.client_address and len(handler.client_address) > 0:
+        return str(handler.client_address[0])
+    return "unknown"
+
+
+def compute_stats(stats_base, videos, events):
+    visits = events.get("visits", []) if isinstance(events, dict) else []
+    downloads = events.get("downloads", []) if isinstance(events, dict) else []
+    admin_attempts = events.get("adminLoginAttempts", []) if isinstance(events, dict) else []
+
+    uploader_set = set(v.get("uploader", "unknown") for v in videos if isinstance(v, dict))
+    uploader_set.discard("")
+    uploader_set.discard("unknown")
+
+    visitor_ips = set(v.get("ip", "unknown") for v in visits if isinstance(v, dict))
+    visitor_ips.discard("")
+
+    downloader_ips = set(d.get("ip", "unknown") for d in downloads if isinstance(d, dict))
+    downloader_ips.discard("")
+
+    attempt_ips = set(a.get("ip", "unknown") for a in admin_attempts if isinstance(a, dict))
+    attempt_ips.discard("")
+
+    return {
+        "downloads": len(downloads),
+        "users": len(uploader_set),
+        "episodes": len(videos),
+        "series": int(stats_base.get("series", 0)) if isinstance(stats_base, dict) else 0,
+        "visitorsTotal": len(visits),
+        "uniqueVisitors": len(visitor_ips),
+        "uniqueDownloaders": len(downloader_ips),
+        "adminLoginAttempts": len(admin_attempts),
+        "adminLoginAttemptIps": len(attempt_ips),
+        "recentAdminAttempts": admin_attempts[-10:],
+    }
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         return
@@ -93,9 +138,13 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         parsed = urlparse(self.path)
         path = parsed.path
+        ip = get_client_ip(self)
 
         if path == "/api/stats":
-            self._send_json(read_json(STATS_FILE))
+            stats_base = read_json(STATS_FILE)
+            videos = read_json(VIDEOS_FILE)
+            events = read_json(EVENTS_FILE)
+            self._send_json(compute_stats(stats_base, videos, events))
             return
 
         if path == "/api/videos":
@@ -103,10 +152,29 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if path.startswith("/uploads/"):
+            events = read_json(EVENTS_FILE)
+            if not isinstance(events, dict):
+                events = {"visits": [], "downloads": [], "adminLoginAttempts": []}
+            events.setdefault("downloads", []).append({
+                "ip": ip,
+                "path": path,
+                "at": datetime.utcnow().isoformat() + "Z",
+            })
+            write_json(EVENTS_FILE, events)
             self._serve_file(path)
             return
 
         if path in ["/", "/index.html", "/admin/login.html", "/admin/dashboard.html", "/admin/series.html", "/admin/films.html", "/admin/upload.html", "/admin/users.html", "/admin/statistics.html", "/admin/settings.html"]:
+            if path in ["/", "/index.html"]:
+                events = read_json(EVENTS_FILE)
+                if not isinstance(events, dict):
+                    events = {"visits": [], "downloads": [], "adminLoginAttempts": []}
+                events.setdefault("visits", []).append({
+                    "ip": ip,
+                    "path": path,
+                    "at": datetime.utcnow().isoformat() + "Z",
+                })
+                write_json(EVENTS_FILE, events)
             if path == "/":
                 self._serve_file("index.html")
             else:
@@ -172,13 +240,6 @@ class Handler(BaseHTTPRequestHandler):
             # allow uploader to be passed via query string for robustness
             qs = parse_qs(parsed.query)
             uploader = (qs.get('uploader') or [None])[0] or form_fields.get('uploader') or form_fields.get('author') or 'unknown'
-            # Debug: log form fields to help diagnose missing uploader
-            try:
-                with open(BASE_DIR / 'upload_debug.log', 'a', encoding='utf-8') as dbg:
-                    dbg.write(f"FORM_FIELDS:{form_fields}\n")
-                    dbg.write(f"UPLOADER:{uploader}\n")
-            except Exception:
-                pass
             videos.insert(0, {
                 "id": len(videos) + 1,
                 "name": safe_name,
@@ -189,17 +250,35 @@ class Handler(BaseHTTPRequestHandler):
             })
             write_json(VIDEOS_FILE, videos)
 
-            # Recompute users based on unique uploader names and increment episodes
-            stats = read_json(STATS_FILE)
-            stats["episodes"] = int(stats.get("episodes", 0)) + 1
-            try:
-                users_set = set(v.get('uploader') for v in videos if v.get('uploader'))
-                stats["users"] = len(users_set)
-            except Exception:
-                stats["users"] = int(stats.get("users", 0))
-            write_json(STATS_FILE, stats)
-
             self._send_json({"ok": True, "file": f"/uploads/{safe_name}"})
+            return
+
+        if path == "/api/admin-login":
+            content_length = int(self.headers.get("Content-Length", "0"))
+            raw = self.rfile.read(content_length)
+            try:
+                payload = json.loads(raw.decode("utf-8"))
+            except Exception:
+                self._send_json({"ok": False, "error": "payload invalide"}, 400)
+                return
+
+            username = str(payload.get("username", "")).strip()
+            password = str(payload.get("password", "")).strip()
+            ip = get_client_ip(self)
+            ok = username == "anis" and password == "anis"
+
+            events = read_json(EVENTS_FILE)
+            if not isinstance(events, dict):
+                events = {"visits": [], "downloads": [], "adminLoginAttempts": []}
+            events.setdefault("adminLoginAttempts", []).append({
+                "ip": ip,
+                "username": username,
+                "ok": ok,
+                "at": datetime.utcnow().isoformat() + "Z",
+            })
+            write_json(EVENTS_FILE, events)
+
+            self._send_json({"ok": ok})
             return
 
         self.send_error(404)

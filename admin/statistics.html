@@ -47,7 +47,7 @@
         <div class='metric-icon'>👥</div>
         <div>
           <h2 id='users'>0</h2>
-          <p>Utilisateurs</p>
+          <p>Uploaders uniques</p>
         </div>
       </article>
       <article class='metric'>
@@ -64,16 +64,68 @@
           <p>Séries</p>
         </div>
       </article>
+      <article class='metric'>
+        <div class='metric-icon'>🌐</div>
+        <div>
+          <h2 id='uniqueVisitors'>0</h2>
+          <p>Visiteurs uniques</p>
+        </div>
+      </article>
+      <article class='metric'>
+        <div class='metric-icon'>👀</div>
+        <div>
+          <h2 id='visitorsTotal'>0</h2>
+          <p>Vues du site</p>
+        </div>
+      </article>
+      <article class='metric'>
+        <div class='metric-icon'>⬇️</div>
+        <div>
+          <h2 id='uniqueDownloaders'>0</h2>
+          <p>Téléchargeurs uniques</p>
+        </div>
+      </article>
+      <article class='metric'>
+        <div class='metric-icon'>🔐</div>
+        <div>
+          <h2 id='adminLoginAttempts'>0</h2>
+          <p>Tentatives login admin</p>
+        </div>
+      </article>
+    </section>
+
+    <section class='content-grid'>
+      <div class='panel-card'>
+        <div class='panel-head'>
+          <h3>Tentatives admin récentes (IP)</h3>
+          <span id='adminLoginAttemptIps'>0 IP</span>
+        </div>
+        <div id='attemptList' class='video-list'></div>
+      </div>
     </section>
   </main>
   <script>
     const refreshStats = async () => {
       const res = await fetch('/api/stats');
       const stats = await res.json();
-      document.getElementById('downloads').textContent = stats.downloads;
-      document.getElementById('users').textContent = stats.users;
-      document.getElementById('episodes').textContent = stats.episodes;
-      document.getElementById('series').textContent = stats.series;
+      document.getElementById('downloads').textContent = stats.downloads ?? 0;
+      document.getElementById('users').textContent = stats.users ?? 0;
+      document.getElementById('episodes').textContent = stats.episodes ?? 0;
+      document.getElementById('series').textContent = stats.series ?? 0;
+      document.getElementById('uniqueVisitors').textContent = stats.uniqueVisitors ?? 0;
+      document.getElementById('visitorsTotal').textContent = stats.visitorsTotal ?? 0;
+      document.getElementById('uniqueDownloaders').textContent = stats.uniqueDownloaders ?? 0;
+      document.getElementById('adminLoginAttempts').textContent = stats.adminLoginAttempts ?? 0;
+      document.getElementById('adminLoginAttemptIps').textContent = `${stats.adminLoginAttemptIps ?? 0} IP`;
+
+      const attempts = Array.isArray(stats.recentAdminAttempts) ? stats.recentAdminAttempts.slice().reverse() : [];
+      const attemptList = document.getElementById('attemptList');
+      attemptList.innerHTML = attempts.length
+        ? attempts.map(a => {
+            const state = a.ok ? 'OK' : 'ECHEC';
+            return `<div class='video-item'><strong>${state}</strong><br><span>IP: ${a.ip || 'unknown'}</span><br><span>User: ${a.username || '-'}</span><br><span>Date: ${a.at || '-'}</span></div>`;
+          }).join('')
+        : '<p>Aucune tentative enregistrée.</p>';
     };
     refreshStats();
   </script>
