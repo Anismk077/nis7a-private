@@ -8,8 +8,9 @@ Wants=network-online.target
 Type=oneshot
 RemainAfterExit=yes
 WorkingDirectory=/opt/nis7a
-ExecStart=/usr/bin/docker compose up -d --build
-ExecStop=/usr/bin/docker compose down
+Environment=COMPOSE_FILE=docker-compose.public.yml
+ExecStart=/usr/bin/docker compose -f /opt/nis7a/docker-compose.public.yml up -d --build
+ExecStop=/usr/bin/docker compose -f /opt/nis7a/docker-compose.public.yml down
 TimeoutStartSec=0
 
 [Install]

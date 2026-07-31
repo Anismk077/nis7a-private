@@ -53,6 +53,56 @@ docker run -d --name nis7a-app -p 8000:8000 \
 3. En bas, section Danger Zone -> Change repository visibility.
 4. Choisis Public et confirme.
 
+## Publier sur nis7a.fr
+
+GitHub Pages ne suffit pas pour cette application complete: l'admin utilise un backend Python, des sessions et des uploads. Pour publier sur `nis7a.fr`, il faut un serveur allume en permanence.
+
+### 1. Pointer le domaine vers le serveur
+
+Chez ton registrar DNS, cree:
+
+- un enregistrement `A` pour `nis7a.fr` vers l'IP publique du serveur
+- un enregistrement `A` pour `www.nis7a.fr` vers la meme IP
+
+### 2. Deployer la version publique
+
+```bash
+cd /opt/nis7a
+docker compose -f docker-compose.public.yml up -d --build
+```
+
+Le fichier [docker-compose.public.yml](/Users/anismarzouk/Desktop/marzoukeur/ANIS%20APP/docker-compose.public.yml) lance:
+
+- l'application Python NIS7A
+- Caddy en facade sur 80/443 avec HTTPS automatique pour `nis7a.fr`
+
+### 3. Installation serveur complete
+
+```bash
+sudo mkdir -p /opt/nis7a
+sudo chown -R "$USER":"$USER" /opt/nis7a
+git clone https://github.com/Anismk077/nis7a-private.git /opt/nis7a
+cd /opt/nis7a
+docker compose -f docker-compose.public.yml up -d --build
+```
+
+### 4. Demarrage automatique
+
+```bash
+cd /opt/nis7a
+chmod +x deploy/setup-server.sh deploy/update.sh
+sudo cp deploy/systemd/nis7a.service /etc/systemd/system/nis7a.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now nis7a.service
+```
+
+### 5. Mise a jour
+
+```bash
+cd /opt/nis7a
+./deploy/update.sh
+```
+
 ## Recuperer sur ton vrai PC
 
 ```bash
@@ -75,7 +125,7 @@ sudo mkdir -p /opt/nis7a
 sudo chown -R "$USER":"$USER" /opt/nis7a
 git clone https://github.com/Anismk077/nis7a-private.git /opt/nis7a
 cd /opt/nis7a
-docker compose up -d --build
+docker compose -f docker-compose.public.yml up -d --build
 ```
 
 ### Demarrage automatique au reboot serveur

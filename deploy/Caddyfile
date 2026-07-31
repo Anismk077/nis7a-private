@@ -1,0 +1,8 @@
+nis7a.fr {
+  encode gzip zstd
+  reverse_proxy nis7a:8000
+}
+
+www.nis7a.fr {
+  redir https://nis7a.fr{uri} permanent
+}

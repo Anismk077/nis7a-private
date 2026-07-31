@@ -4,6 +4,7 @@ set -euo pipefail
 APP_DIR=${APP_DIR:-/opt/nis7a}
 REPO_URL=${REPO_URL:-https://github.com/Anismk077/nis7a-private.git}
 BRANCH=${BRANCH:-main}
+COMPOSE_FILE=${COMPOSE_FILE:-docker-compose.public.yml}
 
 if ! command -v docker >/dev/null 2>&1; then
   echo "Docker is required. Install Docker first."
@@ -27,6 +28,6 @@ else
 fi
 
 cd "$APP_DIR"
-docker compose up -d --build
+docker compose -f "$COMPOSE_FILE" up -d --build
 
-echo "NIS7A is running with Docker Compose."
+echo "NIS7A is running publicly with $COMPOSE_FILE."
