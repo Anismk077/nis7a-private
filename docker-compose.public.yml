@@ -7,6 +7,9 @@ services:
     environment:
       HOST: 0.0.0.0
       PORT: 8000
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     volumes:
       - ./data:/app/data
       - ./uploads:/app/uploads
@@ -20,6 +23,9 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     volumes:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
